@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>KouaITRAHub - Firebase Edition</title>
+    <style>
+        /* --- STYLE GLOBAL --- */
+        body { background-color: #0f0f0f; color: #FFFFFF; font-family: 'Roboto', Arial, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background-color: #1b1b1b; padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; z-index: 100; gap: 20px; }
+        .logo-section { display: flex; align-items: center; gap: 15px; }
+        .logo { font-size: 22px; font-weight: 900; cursor: pointer; text-decoration: none; color: white; }
+        .logo span { background-color: #FF9900; color: #000; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+        #back-btn { display: none; background: #333; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .search-container { flex: 1; display: flex; justify-content: center; max-width: 600px; }
+        .search-bar { width: 100%; background: #000; border: 1px solid #444; color: white; padding: 12px 25px; border-radius: 30px; outline: none; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .btn-orange { background: #FF9900; color: #000; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-login { background: transparent; color: #3ea6ff; border: 1px solid #3ea6ff; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .user-profile { width: 35px; height: 35px; background: #FF9900; border-radius: 50%; display: none; cursor: pointer; align-items: center; justify-content: center; color: #000; font-weight: bold; border: 2px solid #fff; overflow: hidden; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        nav { width: 240px; background-color: #0f0f0f; border-right: 1px solid #222; padding: 15px; }
+        nav ul { list-style: none; padding: 0; }
+        nav li { padding: 12px 15px; color: #efefef; cursor: pointer; border-radius: 8px; margin-bottom: 5px; }
+        nav li.active { background: #272727; color: #FF9900; }
+        .content { flex: 1; padding: 30px; overflow-y: auto; }
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 35px 20px; }
+        .video-card { cursor: pointer; transition: transform 0.3s ease; }
+        .video-card:hover { transform: scale(1.03); }
+        .video-thumb { width: 100%; height: 170px; background: #222; border-radius: 12px; overflow: hidden; }
+        .main-vid { width: 100%; height: 100%; object-fit: cover; }
+        .card-info { display: flex; gap: 12px; margin-top: 12px; }
+        .card-avatar { width: 36px; height: 36px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #FF9900; }
+        .card-text b { font-size: 15px; display: block; color: #fff; }
+        .card-text small { color: #aaa; }
+        #watch-page { display: none; flex-direction: column; flex: 1; }
+        .player-container { width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 16px; overflow: hidden; }
+        #main-player { width: 100%; height: 100%; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: #1b1b1b; width: 350px; border-radius: 15px; padding: 30px; text-align: center; border: 1px solid #333; }
+        .modal-box input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; margin-bottom: 12px; border-radius: 8px; box-sizing: border-box; }
+        .file-label { display: block; background: #333; padding: 15px; border-radius: 8px; border: 2px dashed #FF9900; cursor: pointer; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-section">
+            <button id="back-btn" onclick="retourArriere()">← RETOUR</button>
+            <div class="logo" onclick="retourArriere()">KOUAITRA<span>HUB</span></div>
+        </div>
+        <div class="search-container">
+            <input type="text" class="search-bar" placeholder="Rechercher...">
+        </div>
+        <div class="header-right">
+            <button class="btn-orange" onclick="window.toggleModal('upload-modal', true)">➕ CRÉER</button>
+            <button id="login-btn" class="btn-login" onclick="window.toggleModal('login-modal', true)">👤 CONNEXION</button>
+            <div id="user-icon" class="user-profile" onclick="window.deconnexion()">?</div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <nav>
+            <ul>
+                <li class="active">🏠 Accueil</li>
+                <li>🕒 Historique</li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <div id="accueil-page">
+                <h2 style="margin-bottom:25px;">Vidéos Récentes</h2>
+                <div class="video-grid" id="mainGrid"></div>
+            </div>
+
+            <div id="watch-page">
+                <div class="player-container"><video id="main-player" controls autoplay></video></div>
+                <h2 id="w-title" style="margin-top:20px;">Titre</h2>
+                <p id="w-author-name">Auteur</p>
+            </div>
+        </main>
+    </div>
+
+    <div id="login-modal" class="modal"><div class="modal-box">
+        <h2 style="color:#3ea6ff">Connexion</h2>
+        <input type="text" id="username-input" placeholder="Ton Pseudo">
+        <button class="btn-orange" style="width:100%" onclick="window.connexion()">ENTRER</button>
+        <p onclick="window.toggleModal('login-modal', false)" style="cursor:pointer; margin-top:15px; color:#aaa">Annuler</p>
+    </div></div>
+
+    <div id="upload-modal" class="modal"><div class="modal-box">
+        <h2 style="color:#FF9900">Publier une vidéo</h2>
+        <label class="file-label">
+            <span id="file-name-display">📁 Choisir le fichier</span>
+            <input type="file" id="file-input" style="display:none" accept="video/*" onchange="document.getElementById('file-name-display').innerText = this.files[0].name">
+        </label>
+        <input type="text" id="v-title-input" placeholder="Titre de la vidéo">
+        <button class="btn-orange" style="width:100%" id="upload-btn">PUBLIER MAINTENANT</button>
+        <p onclick="window.toggleModal('upload-modal', false)" style="cursor:pointer; margin-top:15px; color:#aaa">Annuler</p>
+    </div></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBT6YhxYgYLp_iUsCa4PQGbK4TWb8YINtM",
+            authDomain: "kouaitrahub-b0879.firebaseapp.com",
+            projectId: "kouaitrahub-b0879",
+            storageBucket: "kouaitrahub-b0879.firebasestorage.app",
+            messagingSenderId: "170543975192",
+            appId: "1:170543975192:web:397b4bcc167ae011c0ac6d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let allVideos = [];
+
+        // Gestion de l'utilisateur
+        window.connexion = () => {
+            const user = document.getElementById('username-input').value;
+            if(user) {
+                localStorage.setItem('kouaitra_user', user);
+                location.reload();
+            }
+        };
+
+        window.deconnexion = () => {
+            if(confirm("Se déconnecter ?")) {
+                localStorage.removeItem('kouaitra_user');
+                location.reload();
+            }
+        };
+
+        const currentUser = localStorage.getItem('kouaitra_user');
+        if(currentUser) {
+            document.getElementById('login-btn').style.display = 'none';
+            document.getElementById('user-icon').style.display = 'flex';
+            document.getElementById('user-icon').innerText = currentUser[0].toUpperCase();
+        }
+
+        // Chargement des vidéos
+        onSnapshot(query(collection(db, "videos"), orderBy("timestamp", "desc")), (snapshot) => {
+            allVideos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderGrid();
+        });
+
+        // Fonction Upload
+        document.getElementById('upload-btn').onclick = async () => {
+            const file = document.getElementById('file-input').files[0];
+            const title = document.getElementById('v-title-input').value;
+            const btn = document.getElementById('upload-btn');
+
+            if(!currentUser) return alert("Connecte-toi d'abord !");
+            if(!file || !title) return alert("Choisis une vidéo et un titre !");
+            
+            btn.disabled = true;
+            btn.innerText = "PATIENTE...";
+
+            const storageRef = ref(storage, 'videos/' + Date.now() + "_" + file.name);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', 
+                (snap) => {
+                    let pc = (snap.bytesTransferred / snap.totalBytes) * 100;
+                    btn.innerText = Math.round(pc) + "%";
+                }, 
+                (err) => { alert("Erreur : " + err.message); btn.disabled = false; },
+                async () => {
+                    const url = await getDownloadURL(uploadTask.snapshot.ref);
+                    await addDoc(collection(db, "videos"), {
+                        titre: title,
+                        url: url,
+                        auteur: currentUser,
+                        timestamp: Date.now()
+                    });
+                    window.toggleModal('upload-modal', false);
+                    btn.disabled = false;
+                    btn.innerText = "PUBLIER MAINTENANT";
+                }
+            );
+        };
+
+        function renderGrid() {
+            const grid = document.getElementById('mainGrid');
+            grid.innerHTML = "";
+            allVideos.forEach(v => {
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.onclick = () => ouvrirVideo(v);
+                card.innerHTML = `
+                    <div class="video-thumb"><video class="main-vid" src="${v.url}"></video></div>
+                    <div class="card-info">
+                        <div class="card-avatar">${v.auteur ? v.auteur[0].toUpperCase() : '?'}</div>
+                        <div class="card-text"><b>${v.titre}</b><small>Par ${v.auteur}</small></div>
+                    </div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function ouvrirVideo(v) {
+            document.getElementById('accueil-page').style.display = 'none';
+            document.getElementById('watch-page').style.display = 'flex';
+            document.getElementById('back-btn').style.display = 'block';
+            const p = document.getElementById('main-player');
+            p.src = v.url;
+            document.getElementById('w-title').innerText = v.titre;
+            document.getElementById('w-author-name').innerText = "Par " + v.auteur;
+        }
+
+        window.toggleModal = (id, show) => { document.getElementById(id).style.display = show ? 'flex' : 'none'; };
+        window.retourArriere = () => { location.reload(); };
+    </script>
+</body>
+</html>
